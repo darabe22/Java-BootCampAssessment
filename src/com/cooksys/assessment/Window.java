@@ -17,10 +17,12 @@ import javax.swing.JMenuItem;
 
 import java.awt.GridBagLayout;
 
+import javax.swing.DefaultListModel;
 import javax.swing.JMenu;
 import javax.swing.BoxLayout;
 import javax.swing.JList;
 import javax.swing.JSplitPane;
+import javax.swing.ListModel;
 
 import java.awt.Component;
 
@@ -35,12 +37,37 @@ import java.awt.GridLayout;
 
 import javax.swing.JScrollPane;
 
-import java.util.List;
+import java.util.ArrayList;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
+import java.io.File;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
+
 
 public class Window {
 
 	private JFrame frame;
+	
+	private JList list;
+	
 
+	private JList list_1;
+
+	@XmlRootElement
+	class pcPartList{
+		@XmlElement
+		ListModel getListModel(){
+			return list_1.getModel();
+		}
+	}
 	/**
 	 * Launch the application. The main method is the entry point to a Java application. 
 	 * For this assessment, you shouldn't have to add anything to this.
@@ -82,13 +109,55 @@ public class Window {
 		menuBar.add(mnFile);
 		
 		JMenuItem mntmLoad = new JMenuItem("Load");
+		mntmLoad.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				try {
+
+					File file = new File("C:\\pcpartlist.xml");
+					JAXBContext jaxbContext = JAXBContext.newInstance(pcPartList.class);
+
+					Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+					pcPartList pcList = (pcPartList) jaxbUnmarshaller.unmarshal(file);
+					System.out.println(pcList);
+
+				  } catch (JAXBException jaxe) {
+					jaxe.printStackTrace();
+				  }
+			}
+		});
 		mnFile.add(mntmLoad);
 		
 		JMenuItem mntmSave = new JMenuItem("Save");
+		mntmSave.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				try{
+					File file = new File("C:\\pcpartlist.xml");
+					JAXBContext jaxbContext = JAXBContext.newInstance(pcPartList.class);
+					Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
+
+					jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+
+					jaxbMarshaller.marshal(list_1, file);
+					jaxbMarshaller.marshal(list_1, System.out);
+
+				}catch(JAXBException jaxe){
+					jaxe.printStackTrace();
+				}
+			}
+		});
 		mnFile.add(mntmSave);
 		
-		JMenuItem menuItem = new JMenuItem("New menu item");
-		mnFile.add(menuItem);
+		JMenuItem mntmExit = new JMenuItem("Exit");
+		mntmExit.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				frame.dispose();
+			}
+		});
+		mnFile.add(mntmExit);
+		
 		frame.getContentPane().setLayout(new BoxLayout(frame.getContentPane(), BoxLayout.X_AXIS));
 		
 		JPanel panel = new JPanel();
@@ -100,7 +169,7 @@ public class Window {
 		gbl_panel.rowWeights = new double[]{0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE};
 		panel.setLayout(gbl_panel);
 		
-		JList list = new JList();
+		list = new JList();
 		list.setAlignmentY(Component.TOP_ALIGNMENT);
 		list.setModel(new AbstractListModel() {
 			String[] values = new String[] {"Case", "Motherboard", "CPU", "GPU", "PSU", "RAM", "HDD"};
@@ -132,16 +201,45 @@ public class Window {
 		JButton button = new JButton(">>");
 		button.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				//list_1.set
-				//List <E> workingList=list.getSelectedValuesList();
+				ListModel originalList=list_1.getModel();
+				DefaultListModel newList_1Model = new DefaultListModel();
+				ArrayList selectedList = new ArrayList(list.getSelectedValuesList());
+				
+				for(int x=0; x < originalList.getSize(); x++){
+					newList_1Model.addElement( originalList.getElementAt(x) );
+				}
+				
+				for(int x=0; x < selectedList.size(); x++ ){
+					if( ! newList_1Model.contains( selectedList.get(x) ) ){
+						newList_1Model.addElement( selectedList.get(x) );
+					}
+				}
+				
+				list_1.setModel(newList_1Model);
 			}
 		});
 		panel_1.add(button);
 		
 		JButton button_1 = new JButton("<<");
+		button_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				ListModel originalList = list_1.getModel();
+				DefaultListModel newList_1Model = new DefaultListModel();
+				ArrayList selectedList = new ArrayList(list_1.getSelectedValuesList());
+				
+				for(int x=0; x < originalList.getSize(); x++ ){
+					if( !selectedList.contains( originalList.getElementAt(x) ) ){
+						newList_1Model.addElement( originalList.getElementAt(x) );
+					}
+				}
+				
+				list_1.setModel(newList_1Model);
+			}
+		});
 		panel_1.add(button_1);
 		
-		JList list_1 = new JList();
+		
+		list_1 = new JList();
 		GridBagConstraints gbc_list_1 = new GridBagConstraints();
 		gbc_list_1.fill = GridBagConstraints.BOTH;
 		gbc_list_1.anchor = GridBagConstraints.NORTHWEST;
